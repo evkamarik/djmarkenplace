@@ -1,0 +1,103 @@
+{% load static %}
+{% load i18n %}
+{% load cache %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ item.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/normalize.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header class="header">
+        <div class="container header_container">
+            <div class="header_logo logo">
+                <a href="{% url 'shop:main' %}" class="header-logo__link link"><img class="header-logo__img" src="../../media/logo.jpeg" alt="logo"></a>
+            </div>
+            <div class="header_nav">
+                <div class="nav_auth flex">
+                    {% if request.user.is_authenticated %}
+                        <a class="nav_link__account" href="{{ request.user.user_customer.get_absolute_url }}">{% trans "Account" %}</a>
+                        <a class="nav_link__sign_out" href="{% url 'shop:logout' %}">{% trans "Sign out" %}</a>
+                    {% else %}
+                        <a role="button" href="{% url 'users:login' %}">{% trans "Sign in" %}</a>
+                        <a role="button" href="{% url 'users:register' %}">{% trans "Join" %}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="container main_container">
+            <div class="wrap">
+                <p class="item_category">{{ item.category.get_translated_name }}</p>
+                <h1 class="item_name item_info__title">{{item.name}}</h1>
+                <p class="item_code">{% trans "Part number" %}: {{ item.code }}</p>
+                <div class="item_wrap flex">
+                    <img src="../../{{ item.image }}" alt="{{item.name}}" class="item_image">
+                    <div class="item_cart_wrap">
+                        <div>
+                            <p class="item_price">{{ item.price }} ₽</p>
+                            {% if message != '' %}
+                                <div class="message">
+                                    <p class="message_text">{{message}}</p>
+                                </div>
+                            {% endif %}
+                            <form method="post" action="" class="item_count_form">
+                                {% csrf_token %}
+                                <div class="form_wrap flex">
+                                    {{ count_form.as_p }}
+                                </div>
+                                {% if request.user.is_authenticated %}
+                                    <button type="submit" action="{{ item.get_absolute_url }}" id="add_btn" class="item_add_to_order" >{% trans "Add to my purchases" %}</button>
+                                {% else %}
+                                    <p class="item_notice">{% trans "You must be logged in to add an item to your purchases." %}</p>
+                                    <a role="button" href="{% url 'users:login' %}">{% trans "Sign in" %}</a>
+                                    <a role="button" href="{% url 'users:register' %}">{% trans "Join" %}</a>
+                                {% endif %}
+                            </form>
+                            <p class="item_stock">{{ item.stock }} {% trans "piece in stock" %}</p>
+                        </div>
+                        <a href="{{ item.shop.get_absolute_url }}">{% trans "All products of" %} {{ item.shop.name }}</a>
+                    </div>
+
+                </div>
+            </div>
+            <a href="{{ item.shop.get_absolute_url }}">{% trans "Back" %}</a>
+        </div>
+    </main>
+    {% cache 10 footer%}
+    <footer class="footer">
+        {% block footer_container %}
+        <div class="container footer_container">
+            <form action="{% url 'set_language' %}" method="post">{% csrf_token %}
+                <input name="next" type="hidden" value="{{ redirect_to }}">
+                <select name="language">
+                    {% get_current_language as LANGUAGE_CODE %}
+                    {% get_available_languages as LANGUAGES %}
+                    {% get_language_info_list for LANGUAGES as languages %}
+                    {% for language in languages %}
+                        <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+                            {{ language.name_local }} ({{ language.code }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Go">
+            </form>
+        </div>
+        {% endblock %}
+    </footer>
+    {% endcache %}
+    <script>
+        function disable(value) {
+             var True = true, False = false;
+             if(!{{ request.user.is_authenticated }} || value>{{ item.stock }})  {
+                    document.getElementById('add_btn').setAttribute("disabled","disabled");;
+                } else {
+                    document.getElementById('add_btn').removeAttribute("disabled");
+                }
+            }
+    </script>
+</body>
+</html>

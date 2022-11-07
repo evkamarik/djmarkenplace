@@ -1,0 +1,73 @@
+{% load static %}
+{% load i18n %}
+{% load cache %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blueberries - {% trans 'Online Store'%}</title>
+    <link rel="stylesheet" href="{% static 'css/normalize.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    {% cache 10 header request.user.id LANGUAGE_CODE%}
+    <header class="header">
+        {% block header_container %}
+        <div class="container header_container">
+            <div class="header_logo logo">
+                <a href="{% url 'shop:main' %}" class="header-logo__link link"><img class="header-logo__img" src="../../media/logo.jpeg" alt="logo"></a>
+            </div>
+            <div class="header_nav">
+                <div class="nav_auth flex">
+                    {% if request.user.is_authenticated %}
+                        <a class="nav_link__account" href="{{ request.user.user_customer.get_absolute_url }}">{% trans "Account" %}</a>
+                        <a class="nav_link__sign_out" href="{% url 'users:logout' %}">{% trans "Sign out" %}</a>
+                    {% else %}
+                        <a role="button" href="{% url 'users:login' %}">{% trans "Sign in" %}</a>
+                        <a role="button" href="{% url 'users:register' %}">{% trans "Join" %}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </header>
+    {% endcache %}
+
+    <main>
+        <div class="container main_container">
+            <h1>{% trans 'Cart' %}</h1>
+            <section class="cart">
+                <ul class="cart_list">
+                    {% for item in items %}
+                        <li class="item_item">
+                            <a href="{{ item.get_absolute_url }}" class="item_link">{{ item.name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+    </main>
+    {% cache 10 footer%}
+    <footer class="footer">
+        {% block footer_container %}
+        <div class="container footer_container">
+            <form action="{% url 'set_language' %}" method="post">{% csrf_token %}
+                <input name="next" type="hidden" value="{{ redirect_to }}">
+                <select name="language">
+                    {% get_current_language as LANGUAGE_CODE %}
+                    {% get_available_languages as LANGUAGES %}
+                    {% get_language_info_list for LANGUAGES as languages %}
+                    {% for language in languages %}
+                        <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+                            {{ language.name_local }} ({{ language.code }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Go">
+            </form>
+        </div>
+        {% endblock %}
+    </footer>
+    {% endcache %}
+</body>
+</html>
